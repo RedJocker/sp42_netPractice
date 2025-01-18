@@ -3,6 +3,7 @@ package require Tk
 # Initialize variables
 set total_questions 0
 set correct_answers 0
+set has_answered 0
 variable correct_answer
 
 set cidr_to_subnet {
@@ -21,7 +22,7 @@ proc generate_question {} {
     global correct_answer
     global cidr_to_subnet
     set cidr [expr {int(rand() * 9) + 24}]
-    
+
     set details [dict get $cidr_to_subnet $cidr]
     set subnet_mask [lindex $details 0]
 
@@ -47,10 +48,10 @@ proc generate_choices {correct} {
 }
 
 proc shuffler {a b} {
-    
+
     set x [expr {int(rand() * 10)} - 5]
     set y [expr {int(rand() * 10)} - 5]
-    
+
     return $y - $x
 }
 
@@ -60,18 +61,19 @@ proc update_labels {} {
 }
 
 proc next_question {frame lbl_question} {
-    global total_questions correct_answer
+    global total_questions correct_answer has_answered
 
+    set has_answered 0
     incr total_questions
     set cidr [generate_question]
     .lbl_question configure -text "What is subnet for /$cidr?"
     .lbl_feedback configure -text ""
-    
+
     # Clear previous choices and generate new ones
     foreach widget [winfo children $frame ] {
         destroy $widget
     }
-    
+
     set choices [generate_choices $correct_answer]
     set choices_shuffle [lsort -command shuffler $choices]
     set i 0
@@ -85,15 +87,18 @@ proc next_question {frame lbl_question} {
 }
 
 proc check_answer {choice} {
-    global correct_answer correct_answers lbl_feedback
+    global correct_answer correct_answers lbl_feedback has_answered
 
     if {$choice == $correct_answer} {
-        incr correct_answers
+
+	if {!$has_answered} {
+	    incr correct_answers
+	}
         .lbl_feedback configure -text "Correct!" -fg green
     } else {
         .lbl_feedback configure -text "Wrong! The correct answer is $correct_answer." -fg red
     }
-
+    set has_answered 1
     update_labels
 }
 
@@ -129,7 +134,7 @@ foreach choice $choices {
 }
 
 # Start the first question
-next_question .frame_choices .lbl_question 
+next_question .frame_choices .lbl_question
 
 # Start the Tk event loop
-#tk::MainLoop;			
+#tk::MainLoop;
